@@ -1,0 +1,70 @@
+# =============================================================================
+# MAIN
+# =============================================================================
+Main:
+  log level: debug
+  model: Llama-3.2-1B-Instruct
+
+Devices:
+  idle_device: cpu
+
+Inference:
+  show input:           no
+  skip special tokens:  no 
+  use base model:       no
+  use fine-tuned model: no
+
+  base model: Llama-3.2-1B-Instruct
+  Fine-Tuned Model:
+    dataset:    numina-cot-100k
+    method:     LoRA
+    batch-size: 4
+    epochs:     1
+    
+    framework: PEFT
+  
+Fine-Tuning:
+  batch-size: 4
+  epochs:     1
+  
+  base model: Llama-3.2-1B-Instruct
+  dataset:    numina-cot-100k
+  method:     LoRA
+  framework:  PEFT
+
+Methods:
+  methods:
+    - LoRA
+    - QLoRA
+
+Frameworks:
+  frameworks:
+    - PEFT
+    - unsloth
+
+Models:
+  meta-llama: 
+    - Llama-3.2-1B
+    - Llama-3.2-1B-Instruct
+    - Llama-3.2-3B
+    - Llama-3.2-3B-Instructs
+
+Datasets:
+  HuggingFaceTB:
+    SmolTalk: 
+      - all
+      - apigen-80k
+      - everyday-conversations
+      - explore-instruct-rewriting
+      - longalign
+      - metamathqa-50k
+      - numina-cot-100k
+      - openhermes-100k
+      - self-oss-instruct
+      - smol-constraints
+      - smol-magpie-ultra
+      - smol-rewrite
+      - smol-summorize
+      - systemchats-30k
+
+
