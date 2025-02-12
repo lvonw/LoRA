@@ -14,7 +14,7 @@ torchtune:
   tokenizer:
     _component_: torchtune.models.llama3.llama3_tokenizer
     path : E:\Developer\LoRA\data\models\base\Llama3.2-1B2\tokenizer.model
-    max_seq_len: 512
+    max_seq_len: 1024
 
   checkpointer:
     _component_: torchtune.training.FullModelHFCheckpointer
@@ -36,7 +36,7 @@ torchtune:
     packed: False  # True increases speed
   seed: null
   shuffle: True
-  batch_size: 1
+  batch_size: 4
 
   # Optimizer and Scheduler
   optimizer:
@@ -54,7 +54,7 @@ torchtune:
 
   # Training
   epochs: 1
-  max_steps_per_epoch: 125 #null
+  max_steps_per_epoch: null
   gradient_accumulation_steps: 8  # Use to increase effective batch size
   clip_grad_norm: null
   compile: False  # torch.compile the model + loss, True increases speed + decreases memory
@@ -68,8 +68,8 @@ torchtune:
 
   # Environment
   device: cuda
-  # dtype: bf16
-  dtype: fp32
+  dtype: bf16
+  # dtype: fp32
 
   # Activations Memory
   enable_activation_checkpointing: False  # True reduces memory
