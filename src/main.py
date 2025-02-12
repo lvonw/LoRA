@@ -10,8 +10,8 @@ import platform
 from omegaconf import DictConfig, OmegaConf
 
 
-if platform.system() == "Linux":
-    from unsloth import FastLanguageModel
+# if platform.system() == "Linux":
+    # from unsloth import FastLanguageModel
 
 import logging
 import util
@@ -133,14 +133,15 @@ def main():
                 cache_dir = base_cache_dir) 
     
         case "unsloth":
-            if platform.system() != "Linux":
-                logging.error("Unsloth is only supported on Linux")
-                return -1
-            model = FastLanguageModel.from_pretrained(
-                base_cache_dir,
-                dtype=torch.float16,
-                load_in_4bit=False, 
-            )
+            pass
+            # if platform.system() != "Linux":
+            #     logging.error("Unsloth is only supported on Linux")
+            #     return -1
+            # model = FastLanguageModel.from_pretrained(
+            #     base_cache_dir,
+            #     dtype=torch.float16,
+            #     load_in_4bit=False, 
+            # )
         case _:
             logging.error("Framework is not supported")
     logging.info ("Successfully prepared base model")
