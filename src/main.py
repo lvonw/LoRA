@@ -73,7 +73,7 @@ def tokenize_function(entry, tokenizer):
         tokenize=False)     
     tokenized_text = tokenizer(
         text            = formatted_text,
-        max_length      = 512,
+        max_length      = 2048,
         padding         = "max_length",
         truncation      = True,
         return_tensors  = "pt")

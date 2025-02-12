@@ -11,7 +11,7 @@ Main:
     batch-size: 2
     epochs:     1
     
-    framework: torchtune
+    framework: PEFT
 
 Devices:
   idle_device: cpu
