@@ -51,6 +51,9 @@ class Configuration():
             return _InvalidSection(self.__logger)
         
         return self.sections[section_name]
+    
+    def __getattr__(self, section_name):
+        return self[section_name]
                 
     def __str__(self):
         string = "\n"
@@ -70,18 +73,18 @@ class Configuration():
                                    config_path,
                                    section)
 
-    def __get_external_section(section):
-        external_path       = os.path.join(*section.split("/"))
+    def get_external_section(section):
+        external_path       = os.path.join(*section["external"].split("/"))
         external_section    = Configuration.__load_config_file(external_path)
         
         if not external_section:
-            return None
+            return None, None
         
         return external_section, external_path
 
     def __add_external_section(self, section_name, section):
             external_section, external_path = (
-                Configuration.__get_external_section(section))
+                Configuration.get_external_section(section))
             
             if (external_section 
                 and "only_load_selection" in section 
@@ -204,6 +207,13 @@ class Section():
             self.__logger.error(f"{configuration_name} is not a valid item") 
         return None
     
+    def __getattr__(self, configuration_name):
+        return self[configuration_name]
+    
+    def get(self, configuration_name, default_value=None):
+        value = self[configuration_name]
+        return value if value is not None else default_value
+    
     def __setitem__(self, configuration_name, configuration):
         if self.read_only:
             self.__logger.error(f"{self.name} is read-only") 
@@ -249,6 +259,13 @@ class Section():
                                                     self.__logger)
 
         return configurations
+    
+
+    def to_dict(self):
+        result = {}
+        for item_name, item in self.configurations.items():
+            result[item_name] = item.to_dict()
+        return result
 
     def get_usage(self, configuration_name):
         if configuration_name in self.configurations:
@@ -284,6 +301,8 @@ class Item():
             return False
         return entry in self.value
     
+    def to_dict(self):
+        return self.value
 
     def set_usage(self, usage):
         self.usage  = usage   

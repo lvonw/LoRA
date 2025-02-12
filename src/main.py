@@ -1,7 +1,19 @@
 import constants
-import logging
-import os
+from inference import run_inference
+from args import prepare_arg_parser
+
+from torchtune_pipeline.fine_tuning import LoRAFinetuneRecipeSingleDevice
+
 import torch
+import os
+import platform
+from omegaconf import DictConfig, OmegaConf
+
+
+if platform.system() == "Linux":
+    from unsloth import FastLanguageModel
+
+import logging
 import util
 
 from datasets       import load_dataset, Dataset
@@ -9,14 +21,10 @@ from config         import Configuration
 from peft           import get_peft_model, LoraConfig, PeftModel
 from transformers   import (AutoTokenizer, 
                             AutoModelForCausalLM, 
-                            pipeline as pl,
                             Trainer, 
                             TrainingArguments, 
                             DataCollatorForLanguageModeling)
 from tqdm           import tqdm
-
-from llama_models.llama3.reference_impl.generation import Llama
-from llama_models.llama3.api.datatypes import RawMessage, StopReason
 
 # def setup_distributed():
 #     os.environ["RANK"] = "0"          
@@ -31,7 +39,6 @@ from llama_models.llama3.api.datatypes import RawMessage, StopReason
 #     backend = "GLOO"
 #     distributed.init_process_group(backend)
 #     torch.cuda.set_device(local_rank)
-
 
 def build_model_id(model_config, model_name):
     for family, members in model_config.items():
@@ -72,21 +79,128 @@ def tokenize_function(entry, tokenizer):
         return_tensors  = "pt")
     return tokenized_text
 
-
-
 def main():
+    # Parse args
+    parser  = prepare_arg_parser()
+    args    = parser.parse_args()    
+    
+    # Need to do this because funny haha torchtune overrides the logging config
+    logging.getLogger().handlers = [] 
+    # set up logging
     logging.basicConfig(
         level   = logging.INFO,
         format  = "%(asctime)s | %(levelname)s | %(message)s",
         datefmt = "%d-%m-%Y %H:%M:%S")
-
     logging.info("Setting up Configuration")
+
+    # Set up control flow
+    do_inference    = args.do_inference[0] if args.do_inference else None
+    do_fine_tune    = args.do_fine_tune
+    use_fine_tuned  = (do_inference     == "fine-tuned"
+                       or do_inference  == "ft" 
+                       or do_fine_tune)
+    load_existing   = use_fine_tuned and not do_fine_tune
+    
+    # Set up configuration
     config = Configuration(constants.CONFIG_PATH_MASTER, "default")
     if not config.load_configuration():
         return -1
+    main_config = config["Main"]
     logging.info("Successfully set up Configuration")
-
     
+    # =========================================================================
+    # PREPARE MODEL
+    # =========================================================================
+    # Model Params ------------------------------------------------------------
+    base_model_name         = main_config["base model"]
+    base_model_id           = util.build_model_id(config["Models"], 
+                                        base_model_name)
+    if base_model_id is None:
+        logging.error("Model is not supported.")
+        return -1
+    base_cache_dir          = util.build_base_model_path(base_model_name)
+
+    fine_tuned_config       = main_config["Fine-Tuned Model"]
+    fine_tuned_method       = fine_tuned_config["method"]
+    fine_tuning_framework    = fine_tuned_config["framework"]
+
+    # Model -------------------------------------------------------------------
+    logging.info ("Preparing base model")
+    match fine_tuning_framework:
+        case "torchtune" | "PEFT":
+            model = AutoModelForCausalLM.from_pretrained(
+                base_model_id,
+                cache_dir = base_cache_dir) 
+    
+        case "unsloth":
+            if platform.system() != "Linux":
+                logging.error("Unsloth is only supported on Linux")
+                return -1
+            model = FastLanguageModel.from_pretrained(
+                base_cache_dir,
+                dtype=torch.float16,
+                load_in_4bit=False, 
+            )
+        case _:
+            logging.error("Framework is not supported")
+    logging.info ("Successfully prepared base model")
+    
+    # Tokenizer ---------------------------------------------------------------
+    logging.info ("Preparing Tokenizer")
+    tokenizer               = AutoTokenizer.from_pretrained(
+        base_model_id,
+        cache_dir = base_cache_dir)
+    logging.info ("Successfully prepared Tokenizer")
+    
+    # Adapter -----------------------------------------------------------------
+    # IMPORTANT: from_pretrained overrides the model as a side effect
+    if use_fine_tuned:
+        dataset_name            = fine_tuned_config["dataset"]
+        dataset_id, dataset_path = util.build_dataset_id_and_path(
+            config["Datasets"], 
+            dataset_name)
+
+        fine_tuned_dir = util.build_fine_tuned_model_path(
+            base_model_name,
+            dataset_name,
+            fine_tuned_method,
+            fine_tuning_framework)
+        
+        logging.info ("Preparing fine-tuned adapter")
+        if load_existing:
+            match fine_tuning_framework:
+                case "PEFT":
+                    model = PeftModel.from_pretrained(model, fine_tuned_dir)
+                case  "torchtune":
+                    model = PeftModel.from_pretrained(
+                        model, 
+                        os.path.join(fine_tuned_dir, "epoch_0"))
+                case _:
+                    logging.error("Framework is not supported")
+        else:
+            match fine_tuning_framework:
+                case "PEFT":
+                    lora_config = LoraConfig(
+                        r               = 8, 
+                        lora_alpha      = 32, 
+                        lora_dropout    = 0.1,  
+                        bias            = "none",  
+                        task_type       = "CAUSAL_LM",  
+                    )
+                    model = peft_model = get_peft_model(model, lora_config)
+                case "unsloth":
+                    logging.error("unsloth is not supported yet")
+                    return -1
+                case  "torchtune":
+                    pass
+                case "Axolotl":
+                    logging.error("Finetuning with this framework works over the command line")
+                    return -1
+                case _:
+                    logging.error("Framework is not supported")
+                    return -1
+        logging.info ("Successfully prepared fine-tuned adapter")
+
     # =========================================================================
     # Inference 
     # =========================================================================
@@ -94,161 +208,21 @@ def main():
     You are a helpful assistant that is good at maths<|eot_id|><|start_header_id|>user<|end_header_id|>
     "In a fruit salad, there are raspberries, green grapes, and red grapes. There are three times the number of red grapes as green grapes, plus some additional red grapes. There are 5 less raspberries than green grapes. There are 102 pieces of fruit in the salad, and there are 67 red grapes in the salad. How many more red grapes are there than three times the number of green grapes?<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
     
-    do_inference = True
+    # prompt = """<|begin_of_text|><|start_header_id|>system<|end_header_id|>
+    # You are a helpful assistant that is good at maths<|eot_id|><|start_header_id|>user<|end_header_id|>A bounded sequence \\( x_{0}, x_{1}, x_{2}, \\ldots \\) such that for all natural numbers \\( i \\) and \\( j \\), where \\( i \\neq j \\), the following inequality holds:\n\\[ \\left|x_{i} - x_{j}\\right| |i - j|^{a} \\geq 1 \\]<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
+
     if do_inference:
-        inference_config = config["Inference"]
-        # Generate Method ===================================================== 
-        do_generate = True
-        if do_generate:
-            
-            base_model_name  = inference_config["base model"]
-            base_model_id    = build_model_id(config["Models"], 
-                                                base_model_name)
-            if base_model_id is None:
-                logging.error("Model is not supported.")
-                return -1
-            base_cache_dir = build_base_model_path(base_model_name)
-
-            logging.info ("Preparing base model")
-            inference_model = AutoModelForCausalLM.from_pretrained(
-                base_model_id,
-                cache_dir = base_cache_dir)
-            logging.info ("Successfully prepared base model")
-                
-            logging.info ("Preparing Tokenizers")
-            tokenizer = AutoTokenizer.from_pretrained(
-                base_model_id,
-                cache_dir = base_cache_dir)
-            logging.info ("Successfully prepared Tokenizers")
-
-            use_fine_tuned_model = True
-            if use_fine_tuned_model:
-                fine_tuned_config      = inference_config["Fine-Tuned Model"]
-                fine_tuned_method      = fine_tuned_config["method"]
-                fine_tuned_framework   = fine_tuned_config["framework"]
-                
-                dataset_name = fine_tuned_config["dataset"]
-                dataset_id, dataset_path = build_dataset_id_and_path(
-                    config["Datasets"], 
-                    dataset_name)
-
-                # Prep fine-tuned Model Vars ==================================
-                fine_tuned_dir = build_fine_tuned_model_path(
-                    base_model_name,
-                    dataset_name,
-                    fine_tuned_method,
-                    fine_tuned_framework)
-                
-                # This can change the inference model merely as a sideeffect
-                # so in order to be safe, we explicitly override it.
-                inference_model = PeftModel.from_pretrained(inference_model, 
-                                                             fine_tuned_dir)
-
-
-
-            tokenized_input = tokenizer(prompt, return_tensors="pt")
-            input_ids       = tokenized_input.input_ids
-            attention_mask  = tokenized_input.attention_mask
-
-            device          = util.get_device(config = config)
-            inference_model = inference_model.to(device) 
-            input_ids       = input_ids.to(device)
-            attention_mask  = attention_mask.to(device)
-            logging.info (f"Moved model to {device}")
-
-
-            output_sequences = inference_model.generate(
-                input_ids, 
-                max_new_tokens          = 500, 
-                attention_mask          = attention_mask,
-                do_sample               = False, 
-                temperature             = None if True else 0.6,
-                top_k                   = None if True else 10,
-                top_p                   = None if True else 0.9,
-                num_return_sequences    = 1,
-                pad_token_id            = tokenizer.eos_token_id,
-                eos_token_id            = tokenizer.eos_token_id)
-
-            output_sequences = output_sequences.to(
-                util.get_device(idle = True, config = config["Devices"]))
-
-            output_sequences = output_sequences[:, input_ids.shape[1]:]
-
-            response = tokenizer.decode(
-                output_sequences[0], 
-                skip_special_tokens=inference_config["skip special tokens"])
-
-            print (response)
-
-
-        # Pipeline Method =====================================================
-        do_pipeline = False
-        if do_pipeline:
-            pipeline = pl(
-                task            = "text-generation",
-                model           = base_model,
-                torch_dtype     = torch.bfloat16,
-                device_map      = "auto",
-                tokenizer       = tokenizer,
-                model_kwargs    = {"cache_dir": base_cache_dir}
-            )
-
-            sequences = pl(
-                prompt, #"def print_hello_world():",        
-                do_sample               = True,
-                top_k                   = 10,
-                num_return_sequences    = 1,
-                pad_token_id            = tokenizer.eos_token_id,
-                bos_token_id            = tokenizer.bos_token_id,
-                eos_token_id            = tokenizer.eos_token_id,
-                truncation              = True,
-                max_new_tokens          = 100,
-            )
-
-            for seq in sequences:
-                print(f"Result: {seq['generated_text']}")
+        response = run_inference(config["Inference"],
+                                 model,
+                                 tokenizer,
+                                 prompt,
+                                 logging)
+        print (response)
 
     # =========================================================================
     # Fine-Tuning
     # =========================================================================
-    do_fine_tune = False 
     if do_fine_tune:
-        fine_tuning_config      = config["Fine-Tuning"]
-        fine_tuning_method      = fine_tuning_config["method"]
-        fine_tuning_framework   = fine_tuning_config["framework"]
-
-        #  Prep Base Model Vars ===============================================  
-        base_model_name  = fine_tuning_config["base model"]
-        base_model_id    = build_model_id(config["Models"], base_model_name)
-        if base_model_id is None:
-            logging.error("Base Model is not supported.")
-            return -1
-        base_cache_dir = build_base_model_path(base_model_name)
-   
-        # Prep Dataset Vars ===================================================       
-        dataset_name = fine_tuning_config["dataset"]
-        dataset_id, dataset_path = build_dataset_id_and_path(
-            config["Datasets"], 
-            dataset_name)
-
-        # Prep fine-tuned Model Vars ==========================================
-        fine_tuned_dir = build_fine_tuned_model_path(base_model_name,
-                                                     dataset_name,
-                                                     fine_tuning_method,
-                                                     fine_tuning_framework)
-
-        # Create Tokenizer ====================================================
-        logging.info ("Preparing Tokenizers")
-        tokenizer = AutoTokenizer.from_pretrained(
-            base_model_id,
-            cache_dir = base_cache_dir)
-        logging.info ("Successfully prepared Tokenizers")
-
-        print (dataset_name)
-        print (dataset_id)
-        print (dataset_path)
-        print (fine_tuned_dir)
-
         # Load and Format Dataset =============================================
         train_data = load_dataset(
             dataset_id, 
@@ -263,7 +237,7 @@ def main():
             split="test")
         
         tokenizer.pad_token = tokenizer.eos_token
-        
+
         train_data = train_data.map(
             tokenize_function, 
             batched     = True,
@@ -277,59 +251,89 @@ def main():
             desc        = "Formatting Validation Data",
             fn_kwargs   = {
                 "tokenizer" : tokenizer})
-    
-
-        # Create Base Model ===================================================
-        logging.info ("Preparing models")
-        base_model = AutoModelForCausalLM.from_pretrained(
-            base_model_id,
-            cache_dir = base_cache_dir)
-        logging.info ("Successfully prepared models")
-
-        # PEFT ================================================================
-        lora_config = LoraConfig(
-            r               = 8, 
-            lora_alpha      = 32, 
-            lora_dropout    = 0.1,  
-            bias            = "none",  
-            task_type       = "CAUSAL_LM",  
-        )
-
-        peft_model = get_peft_model(base_model, lora_config)
-        peft_model.print_trainable_parameters()
-
-        data_collator = DataCollatorForLanguageModeling(
-            tokenizer, 
-            mlm=False)
-
-        training_args = TrainingArguments(
-            output_dir                  = fine_tuned_dir,
-            num_train_epochs            = 1,
-            per_device_train_batch_size = 1,
-            per_device_eval_batch_size  = 1,
-            eval_strategy               = "epoch",
-            logging_dir                 = "./logs",
-            logging_steps               = 500,
-            save_steps                  = 500,
-            save_total_limit            = 2,
-        )
-
-        trainer = Trainer(
-            model           = peft_model, 
-            train_dataset   = train_data,
-            eval_dataset    = val_data,
-            data_collator   = data_collator,
-            args            = training_args,
-        )
-
-        logging.info ("Starting fine-tuning")
-        trainer.train() 
-        logging.info ("Finished")
         
-        logging.info ("saving weights")
-        peft_model.save_pretrained(fine_tuned_dir)
-        logging.info (f"Saved weights adapter at {str(fine_tuned_dir)}")
 
+        # Torchtune ===========================================================
+        if fine_tuning_framework == "torchtune":
+            
+            logging.info("Reformatting Data for torchtune")
+            train_data = [
+                {"tokens":  data["input_ids"], 
+                "mask":     data["attention_mask"], 
+                "labels":   data["input_ids"]}
+                for data in tqdm(train_data)
+            ]
+            logging.info("Successfully reformatted Data for torchtune")
+
+
+            # Find chached dir, because torchtune expects a different folder 
+            # natively
+            checkpoint_dir = None
+            for directory, _, filenames in os.walk(base_cache_dir):
+                for filename in filenames:
+                    if filename.endswith(".safetensors"):
+                        checkpoint_dir = directory
+
+            if checkpoint_dir is None: 
+                logging.error("Checkpoint directory could not be found")
+                return -1
+
+            cfg = config["Fine-Tuning"]["torchtune"]
+            cfg["output_dir"]                       = fine_tuned_dir
+            cfg["checkpointer"]["checkpoint_dir"]   = checkpoint_dir
+            
+            cfg     = OmegaConf.create(cfg.to_dict())
+            recipe  = LoRAFinetuneRecipeSingleDevice(cfg=cfg)
+
+            recipe.setup(cfg        = cfg, 
+                         dataset    = train_data,
+                         tokenizer  = tokenizer)
+            recipe.train()
+            recipe.cleanup()
+            return
+        
+        # PEFT ================================================================
+        elif fine_tuning_framework == "PEFT":
+            model.print_trainable_parameters()
+
+            data_collator = DataCollatorForLanguageModeling(
+                tokenizer, 
+                mlm=False)
+
+            training_args = TrainingArguments(
+                output_dir                  = fine_tuned_dir,
+                num_train_epochs            = 1,
+                per_device_train_batch_size = 1,
+                per_device_eval_batch_size  = 1,
+                eval_strategy               = "epoch",
+                logging_dir                 = "./logs",
+                logging_steps               = 500,
+                save_steps                  = 500,
+                save_total_limit            = 2,
+            )
+
+            trainer = Trainer(
+                model           = model, 
+                train_dataset   = train_data,
+                eval_dataset    = val_data,
+                data_collator   = data_collator,
+                args            = training_args,
+            )
+
+            logging.info ("Starting fine-tuning")
+            trainer.train() 
+            logging.info ("Finished")
+            
+            logging.info ("saving weights")
+            peft_model.save_pretrained(fine_tuned_dir)
+            logging.info (f"Saved weights adapter at {str(fine_tuned_dir)}")
+        
+        elif fine_tuning_framework == "unsloth":
+            pass
+
+        else: 
+            logging.error("Framework not supported")
+            return -1 
 
 
 

@@ -1,0 +1,102 @@
+torchtune:
+  output_dir: None
+  
+  model:
+    _component_: torchtune.models.llama3_2.lora_llama3_2_1b
+    lora_attn_modules: ['q_proj', 'v_proj', 'output_proj']
+    apply_lora_to_mlp: True
+    lora_rank: 64  # higher increases accuracy and memory
+    lora_alpha: 128  # usually alpha=2*rank
+    lora_dropout: 0.0
+
+  # Tokenizer (CUSTOM: Dont really need this technically, but theres still 
+  # remnants in the code that access this)
+  tokenizer:
+    _component_: torchtune.models.llama3.llama3_tokenizer
+    path : E:\Developer\LoRA\data\models\base\Llama3.2-1B2\tokenizer.model
+    max_seq_len: 512
+
+  checkpointer:
+    _component_: torchtune.training.FullModelHFCheckpointer
+    checkpoint_dir : null
+    checkpoint_files: [
+      model.safetensors
+    ]
+    recipe_checkpoint: null
+    output_dir: ${output_dir}
+    model_type: LLAMA3_2
+  
+  
+  resume_from_checkpoint: False
+  save_adapter_weights_only: True
+
+  # Dataset and Sampler (CUSTOM: We pass a dataset directly into it)
+  dataset:
+    _component_: torchtune.datasets.alpaca_cleaned_dataset
+    packed: False  # True increases speed
+  seed: null
+  shuffle: True
+  batch_size: 1
+
+  # Optimizer and Scheduler
+  optimizer:
+    _component_: torch.optim.AdamW
+    fused: True
+    weight_decay: 0.01
+    #lr: 3e-4
+    lr : 0.0003
+  lr_scheduler:
+    _component_: torchtune.training.lr_schedulers.get_cosine_schedule_with_warmup
+    num_warmup_steps: 100
+
+  loss:
+    _component_: torchtune.modules.loss.CEWithChunkedOutputLoss
+
+  # Training
+  epochs: 1
+  max_steps_per_epoch: 125 #null
+  gradient_accumulation_steps: 8  # Use to increase effective batch size
+  clip_grad_norm: null
+  compile: False  # torch.compile the model + loss, True increases speed + decreases memory
+
+  # Logging
+  metric_logger:
+    _component_: torchtune.training.metric_logging.DiskLogger
+    log_dir: ${output_dir}/logs
+  log_every_n_steps: 1
+  log_peak_memory_stats: True
+
+  # Environment
+  device: cuda
+  # dtype: bf16
+  dtype: fp32
+
+  # Activations Memory
+  enable_activation_checkpointing: False  # True reduces memory
+  enable_activation_offloading: False  # True reduces memory
+
+
+  # Profiler (disabled)
+  profiler:
+    _component_: torchtune.training.setup_torch_profiler
+    enabled: False
+
+    #Output directory of trace artifacts
+    output_dir: ${output_dir}/profiling_outputs
+
+    #`torch.profiler.ProfilerActivity` types to trace
+    cpu: True
+    cuda: True
+
+    #trace options passed to `torch.profiler.profile`
+    profile_memory: False
+    with_stack: False
+    record_shapes: True
+    with_flops: False
+
+    # `torch.profiler.schedule` options:
+    # wait_steps -> wait, warmup_steps -> warmup, active_steps -> active, num_cycles -> repeat
+    wait_steps: 5
+    warmup_steps: 3
+    active_steps: 2
+    num_cycles: 1

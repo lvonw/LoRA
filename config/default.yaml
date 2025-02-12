@@ -3,7 +3,15 @@
 # =============================================================================
 Main:
   log level: debug
-  model: Llama-3.2-1B-Instruct
+  
+  base model: Llama-3.2-1B-Instruct
+  Fine-Tuned Model:
+    dataset:    numina-cot-100k
+    method:     LoRA
+    batch-size: 2
+    epochs:     1
+    
+    framework: torchtune
 
 Devices:
   idle_device: cpu
@@ -11,26 +19,16 @@ Devices:
 Inference:
   show input:           no
   skip special tokens:  no 
-  use base model:       no
-  use fine-tuned model: no
 
-  base model: Llama-3.2-1B-Instruct
-  Fine-Tuned Model:
-    dataset:    numina-cot-100k
-    method:     LoRA
-    batch-size: 4
-    epochs:     1
-    
-    framework: PEFT
-  
 Fine-Tuning:
   batch-size: 4
   epochs:     1
-  
-  base model: Llama-3.2-1B-Instruct
-  dataset:    numina-cot-100k
-  method:     LoRA
-  framework:  PEFT
+
+  torchtune:
+    external: config/torchtune/fine-tune.yaml
+    selection: torchtune
+    only_load_selection: yes
+    read_only: no
 
 Methods:
   methods:
@@ -41,13 +39,15 @@ Frameworks:
   frameworks:
     - PEFT
     - unsloth
+    - torchtune
+    - Axolotl
 
 Models:
   meta-llama: 
     - Llama-3.2-1B
     - Llama-3.2-1B-Instruct
     - Llama-3.2-3B
-    - Llama-3.2-3B-Instructs
+    - Llama-3.2-3B-Instruct
 
 Datasets:
   HuggingFaceTB:
