@@ -18,11 +18,15 @@ import util
 from datasets       import load_dataset, Dataset
 from config         import Configuration 
 from peft           import get_peft_model, LoraConfig, PeftModel
+
 from transformers   import (AutoTokenizer, 
                             AutoModelForCausalLM, 
                             Trainer, 
                             TrainingArguments, 
                             DataCollatorForLanguageModeling)
+from trl import SFTConfig, SFTTrainer
+
+
 from tqdm           import tqdm
 
 # def setup_distributed():
@@ -124,33 +128,42 @@ def main():
     fine_tuning_framework    = fine_tuned_config["framework"]
 
     # Model -------------------------------------------------------------------
-    logging.info ("Preparing base model")
+    logging.info ("Preparing base model and tokenizer")
     match fine_tuning_framework:
         case "torchtune" | "PEFT":
             model = AutoModelForCausalLM.from_pretrained(
                 base_model_id,
                 cache_dir = base_cache_dir) 
+            tokenizer = AutoTokenizer.from_pretrained(
+                base_model_id,
+                cache_dir = base_cache_dir)
     
         case "unsloth":
             if platform.system() != "Linux":
                 logging.error("Unsloth is only supported on Linux")
                 return -1
-            model = FastLanguageModel.from_pretrained(
-                base_cache_dir,
-                dtype=torch.float16,
+            
+            checkpoint_dir = None
+            for directory, _, filenames in os.walk(base_cache_dir):
+                for filename in filenames:
+                    if filename.endswith(".safetensors"):
+                        checkpoint_dir = directory
+
+            if checkpoint_dir is None: 
+                logging.error("Checkpoint directory could not be found")
+                return -1
+
+            model, tokenizer = FastLanguageModel.from_pretrained(
+                #base_cache_dir,
+                model_name = checkpoint_dir,
+                max_seq_length = 1024,
+                dtype="bfloat16",
                 load_in_4bit=False, 
             )
         case _:
             logging.error("Framework is not supported")
     logging.info ("Successfully prepared base model")
-    
-    # Tokenizer ---------------------------------------------------------------
-    logging.info ("Preparing Tokenizer")
-    tokenizer               = AutoTokenizer.from_pretrained(
-        base_model_id,
-        cache_dir = base_cache_dir)
-    logging.info ("Successfully prepared Tokenizer")
-    
+        
     # Adapter -----------------------------------------------------------------
     # IMPORTANT: from_pretrained overrides the model as a side effect
     if use_fine_tuned:
@@ -188,7 +201,14 @@ def main():
                     )
                     model = peft_model = get_peft_model(model, lora_config)
                 case "unsloth":
-                    logging.error("unsloth is not supported yet")
+                    model = FastLanguageModel.get_peft_model(
+                        model,
+                        r=64,
+                        lora_alpha=128,
+                        lora_dropout=0, #0.05,
+                        bias="none",
+                        # use_rslora=True
+                    )
                     return -1
                 case  "torchtune":
                     pass
@@ -252,87 +272,99 @@ def main():
                 "tokenizer" : tokenizer})
         
 
-        # Torchtune ===========================================================
-        if fine_tuning_framework == "torchtune":
-            
-            logging.info("Reformatting Data for torchtune")
-            train_data = [
-                {"tokens":  data["input_ids"], 
-                "mask":     data["attention_mask"], 
-                "labels":   data["input_ids"]}
-                for data in tqdm(train_data)
-            ]
-            logging.info("Successfully reformatted Data for torchtune")
+        match fine_tuning_framework:
+            # Torchtune =======================================================
+            case "torchtune":      
+                logging.info("Reformatting Data for torchtune")
+                train_data = [
+                    {"tokens":  data["input_ids"], 
+                    "mask":     data["attention_mask"], 
+                    "labels":   data["input_ids"]}
+                    for data in tqdm(train_data)
+                ]
+                logging.info("Successfully reformatted Data for torchtune")
 
 
-            # Find chached dir, because torchtune expects a different folder 
-            # natively
-            checkpoint_dir = None
-            for directory, _, filenames in os.walk(base_cache_dir):
-                for filename in filenames:
-                    if filename.endswith(".safetensors"):
-                        checkpoint_dir = directory
+                # Find chached dir, because torchtune expects a different 
+                # folder natively
+                checkpoint_dir = None
+                for directory, _, filenames in os.walk(base_cache_dir):
+                    for filename in filenames:
+                        if filename.endswith(".safetensors"):
+                            checkpoint_dir = directory
 
-            if checkpoint_dir is None: 
-                logging.error("Checkpoint directory could not be found")
-                return -1
+                if checkpoint_dir is None: 
+                    logging.error("Checkpoint directory could not be found")
+                    return -1
 
-            cfg = config["Fine-Tuning"]["torchtune"]
-            cfg["output_dir"]                       = fine_tuned_dir
-            cfg["checkpointer"]["checkpoint_dir"]   = checkpoint_dir
-            
-            cfg     = OmegaConf.create(cfg.to_dict())
-            recipe  = LoRAFinetuneRecipeSingleDevice(cfg=cfg)
+                cfg = config["Fine-Tuning"]["torchtune"]
+                cfg["output_dir"]                       = fine_tuned_dir
+                cfg["checkpointer"]["checkpoint_dir"]   = checkpoint_dir
+                
+                cfg     = OmegaConf.create(cfg.to_dict())
+                recipe  = LoRAFinetuneRecipeSingleDevice(cfg=cfg)
 
-            recipe.setup(cfg        = cfg, 
-                         dataset    = train_data,
-                         tokenizer  = tokenizer)
-            recipe.train()
-            recipe.cleanup()
-            return
+                recipe.setup(cfg        = cfg, 
+                            dataset    = train_data,
+                            tokenizer  = tokenizer)
+                recipe.train()
+                recipe.cleanup()
+                return
         
-        # PEFT ================================================================
-        elif fine_tuning_framework == "PEFT":
-            model.print_trainable_parameters()
+            # PEFT ============================================================
+            case "PEFT" | "unsloth":
+                model.print_trainable_parameters()
 
-            data_collator = DataCollatorForLanguageModeling(
-                tokenizer, 
-                mlm=False)
+                data_collator = DataCollatorForLanguageModeling(
+                    tokenizer, 
+                    mlm=False)
 
-            training_args = TrainingArguments(
-                output_dir                  = fine_tuned_dir,
-                num_train_epochs            = 1,
-                per_device_train_batch_size = 4,
-                per_device_eval_batch_size  = 4,
-                eval_strategy               = "epoch",
-                logging_dir                 = "./logs",
-                logging_steps               = 500,
-                save_steps                  = 500,
-                save_total_limit            = 2,
-            )
+                training_args = TrainingArguments(
+                    output_dir                  = fine_tuned_dir,
+                    num_train_epochs            = 1,
+                    per_device_train_batch_size = 4,
+                    per_device_eval_batch_size  = 4,
+                    eval_strategy               = "epoch",
+                    logging_dir                 = "./logs",
+                    logging_steps               = 500,
+                    save_steps                  = 500,
+                    save_total_limit            = 2,
+                )
 
-            trainer = Trainer(
-                model           = model, 
-                train_dataset   = train_data,
-                eval_dataset    = val_data,
-                data_collator   = data_collator,
-                args            = training_args,
-            )
+                use_sft_trainer = True
+                if use_sft_trainer:
+                    trainer = SFTTrainer(
+                        model           = model, 
+                        train_dataset   = train_data,
+                        eval_dataset    = val_data,
+                        data_collator   = data_collator,
+                        args            = training_args,
+                    )
+                    # from unsloth.chat_templates import train_on_responses_only
+                    # trainer = train_on_responses_only(
+                    # trainer,
+                    # instruction_part = "<|start_header_id|>user<|end_header_id|>\n\n",
+                    # response_part = "<|start_header_id|>assistant<|end_header_id|>\n\n")
+                else:
+                    trainer = Trainer(
+                        model           = model, 
+                        train_dataset   = train_data,
+                        eval_dataset    = val_data,
+                        data_collator   = data_collator,
+                        args            = training_args,
+                    )
 
-            logging.info ("Starting fine-tuning")
-            trainer.train() 
-            logging.info ("Finished")
-            
-            logging.info ("saving weights")
-            peft_model.save_pretrained(fine_tuned_dir)
-            logging.info (f"Saved weights adapter at {str(fine_tuned_dir)}")
-        
-        elif fine_tuning_framework == "unsloth":
-            pass
+                logging.info ("Starting fine-tuning")
+                trainer.train() 
+                logging.info ("Finished")
+                
+                logging.info ("saving weights")
+                peft_model.save_pretrained(fine_tuned_dir)
+                logging.info (f"Saved adapter at {str(fine_tuned_dir)}")
 
-        else: 
-            logging.error("Framework not supported")
-            return -1 
+            case _: 
+                logging.error("Framework not supported")
+                return -1 
 
 
 
