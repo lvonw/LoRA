@@ -329,6 +329,7 @@ def main():
                     logging_steps               = 500,
                     save_steps                  = 500,
                     save_total_limit            = 2,
+                    bf16=True,  
                 )
 
                 use_sft_trainer = True
