@@ -1,6 +1,6 @@
 import constants
-from inference import run_inference
-from args import prepare_arg_parser
+from inference                      import run_inference
+from args                           import prepare_arg_parser
 
 from torchtune_pipeline.fine_tuning import LoRAFinetuneRecipeSingleDevice
 
@@ -24,7 +24,7 @@ from transformers   import (AutoTokenizer,
                             Trainer, 
                             TrainingArguments, 
                             DataCollatorForLanguageModeling)
-from trl import SFTConfig, SFTTrainer
+from trl            import SFTTrainer
 
 
 from tqdm           import tqdm
@@ -182,7 +182,7 @@ def main():
         logging.info ("Preparing fine-tuned adapter")
         if load_existing:
             match fine_tuning_framework:
-                case "PEFT":
+                case "PEFT" | "unsloth":
                     model = PeftModel.from_pretrained(model, fine_tuned_dir)
                 case  "torchtune":
                     model = PeftModel.from_pretrained(
@@ -329,7 +329,7 @@ def main():
                     logging_steps               = 500,
                     save_steps                  = 500,
                     save_total_limit            = 2,
-                    bf16=True,  
+                    bf16                        = True,  
                 )
 
                 use_sft_trainer = True
@@ -360,7 +360,7 @@ def main():
                 logging.info ("Finished")
                 
                 logging.info ("saving weights")
-                peft_model.save_pretrained(fine_tuned_dir)
+                model.save_pretrained(fine_tuned_dir)
                 logging.info (f"Saved adapter at {str(fine_tuned_dir)}")
 
             case _: 
