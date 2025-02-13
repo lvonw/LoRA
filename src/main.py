@@ -157,7 +157,7 @@ def main():
                 #base_cache_dir,
                 model_name = checkpoint_dir,
                 max_seq_length = 1024,
-                dtype="float",
+                dtype="bf16",
                 #dtype="bfloat16",
                 load_in_4bit=False, 
             )
