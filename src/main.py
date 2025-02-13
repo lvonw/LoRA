@@ -209,7 +209,6 @@ def main():
                         bias="none",
                         # use_rslora=True
                     )
-                    return -1
                 case  "torchtune":
                     pass
                 case "Axolotl":
