@@ -161,6 +161,8 @@ def main():
                 #dtype="bfloat16",
                 load_in_4bit=False, 
             )
+
+            # model = FastLanguageModel.for_inference()
         case _:
             logging.error("Framework is not supported")
     logging.info ("Successfully prepared base model")
@@ -182,8 +184,11 @@ def main():
         logging.info ("Preparing fine-tuned adapter")
         if load_existing:
             match fine_tuning_framework:
-                case "PEFT" | "unsloth":
+                case "PEFT":
                     model = PeftModel.from_pretrained(model, fine_tuned_dir)
+
+                case "unsloth": 
+                    model = FastLanguageModel.for_inference(model)
                 case  "torchtune":
                     model = PeftModel.from_pretrained(
                         model, 
@@ -200,7 +205,7 @@ def main():
                         bias            = "none",  
                         task_type       = "CAUSAL_LM",  
                     )
-                    model = peft_model = get_peft_model(model, lora_config)
+                    model = get_peft_model(model, lora_config)
                 case "unsloth":
                     model = FastLanguageModel.get_peft_model(
                         model,
