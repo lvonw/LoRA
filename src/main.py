@@ -187,8 +187,8 @@ def main():
                 case "PEFT":
                     model = PeftModel.from_pretrained(model, fine_tuned_dir)
                 case "unsloth": 
-                    model = FastLanguageModel.for_inference(model)
                     model = PeftModel.from_pretrained(model, fine_tuned_dir)
+                    model = FastLanguageModel.for_inference(model)
                 case  "torchtune":
                     model = PeftModel.from_pretrained(
                         model, 
