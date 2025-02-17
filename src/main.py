@@ -240,42 +240,40 @@ Generiere zu dem folgenden Text ca. 30 unterschiedliche Frage-Antwort-Paare zu d
 "A": "[Antworttext]"}, ...]
 entsprechen. Beinhalte in deiner antwort sonst keinen text. Die Antworten sollen immer so kurz wie möglich gehalten werden. Halte außerdem deine Antworten im JSON Format.
 
-I.1.4 Learning & Softcomputing
-M006 Learning & Softcomputing
-Studiengang Master-Studiengang Informatik
-Kürzel M006
-Bezeichnung Learning & Softcomputing
-Lehrveranstaltung(en) M006a Learning & Softcomputing
-Verantwortliche(r) Prof. Dr. Ulrich Hoffmann
-Zuordnung zum Curriculum Data Science (Master)
-IT-Sicherheit (Master)
-Informatik (Master)
-Verwendbarkeit Das Modul ist sinnvoll mit dem Modul “Robotics” und
-den grundlegenden Modulen “Einführung in die Robotik”
-und “Bildbearbeitung und -analyse” kombinierbar. Zudem
-bietet sich ein Zusammenspiel in Richtung Data Sciences
-an, wenn es mit den grundlegenden Modulen “Grundlagen
-der Mathematik 2”, “Statistik” und im Master mit den
-Modulen “Business Intelligence”, “Multivariate Statistik”
-und “Entscheidungsunterstützung” kombiniert wird.
-Semesterwochenstunden 4
-ECTS 5.0
-Voraussetzungen Voraussetzungen dieses Moduls sind Kenntnisse und
-praktische Erfahrungen in höheren Programmiersprachen.
-Außerdem werden mathematische Grundkenntnisse und
-Kenntnisse der Stochastik erwartet.
-Dauer 1
+I.1.3.2 Übg. Funktionale Programmierung
+Lehrveranstaltung Übg. Funktionale Programmierung
+Dozent(en) Uwe Schmidt
+Hörtermin 2
+Häufigkeit jährlich
+Art 2
+Lehrform Übung/Praktikum/Planspiel
+Semesterwochenstunden 2
+ECTS 3.0
+Prüfungsform Abnahme
+Sprache deutsch
+Lehr- und Medienform(en) studentische Arbeit am Rechner
 Lernziele
-Studierende erwerben Kenntnisse im Bereich des maschinellen Lernens. Sie beherrschen die
-wesentlichen T echniken, mit deren Hilfe Computersysteme Klassifizierungen und Bewertungen
-durchführen, und sie können sie nach Einsatzgebiet und Güte bewerten und beurteilen. Sie
-kennen die Herausforderungen die beim Parametrieren von überwachtem Lernenverfahren
-bedeutsam sind und können sie praktisch anwenden. Sie sind mit wesentlichen Funktionalitäten
-gängiger Machine-Learning-Bibliotheken vertraut. Sie sind in der Lage eigenständig Aufgaben
-des maschinenen Lernens zu analysieren, geeignete Methoden auszuwählen und umzusetzen.
-Im praktischen T eil erwerben sie zusätzlich die Kompetenz arbeitsteilig in einer kleinen
-Arbeitsgruppe wissenschaftlich, selbständig an einer umfangreichen Aufgabe Kenntnisse
-20<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
+Ziel der Übung ist das Erlernen des praktischen Anwenden der Methoden und Konzepte aus
+der Vorlesung.
+Inhalt
+Praktische Übungen über die Themen
+• Rekursion,
+• T ypisierung,
+• Listen und T uple,
+• Funktionen als Daten,
+• Funktoren und Monaden,
+• Ein-und Ausgabe.
+Literatur
+• Uwe Schmidt:
+Funktionale Programmierung,
+Vorlesungsunterlagen im Web: http://www:fh-wedel:de/si/vorlesungen/fp/fp:h
+tml
+• Bird, Richard:
+Introduction to Functional Programming using Haskell,
+2nd Edition Prentice Hall, New Jersey , 1998, ISBN: 0-13-484346-0
+• Graham Hutton: Programming in Haskell, Cambridge University Press, 2007, ISBN:
+978-0-521-69269-4
+19<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
     # prompt = """<|begin_of_text|><|start_header_id|>system<|end_header_id|>
     # You are a helpful assistant that is good at maths<|eot_id|><|start_header_id|>user<|end_header_id|>A bounded sequence \\( x_{0}, x_{1}, x_{2}, \\ldots \\) such that for all natural numbers \\( i \\) and \\( j \\), where \\( i \\neq j \\), the following inequality holds:\n\\[ \\left|x_{i} - x_{j}\\right| |i - j|^{a} \\geq 1 \\]<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
 

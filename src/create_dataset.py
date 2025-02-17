@@ -10,7 +10,7 @@ source_path = os.path.join(constants.DATASETS_PATH_MASTER,
 def main():
     reader = PdfReader(source_path)
     number_of_pages = len(reader.pages)
-    page = reader.pages[19]
+    page = reader.pages[18]
     text = page.extract_text()
 
     
