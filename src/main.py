@@ -233,12 +233,12 @@ def main():
     "In a fruit salad, there are raspberries, green grapes, and red grapes. There are three times the number of red grapes as green grapes, plus some additional red grapes. There are 5 less raspberries than green grapes. There are 102 pieces of fruit in the salad, and there are 67 red grapes in the salad. How many more red grapes are there than three times the number of green grapes?<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
     
     prompt = """<|begin_of_text|><|start_header_id|>system<|end_header_id|>
-Du bist ein Generator für LLM Trainingsbeispiele im Frage Antwort Format<|eot_id|><|start_header_id|>user<|end_header_id|>
+Du bist ein Generator für LLM Trainingsbeispiele im Frage Antwort Format. Du antwortest generell inn einer gültigen JSON Formattierung<|eot_id|><|start_header_id|>user<|end_header_id|>
 
 Generiere zu dem folgenden Text 20 Frage Antwort paare zu dem Inhalt dieser Seite aus dem Kurrikulum eines Master Studiengangs in der Informatik. Die paare sollen exakt dem muster 
 Frage: "[Fragetext]"
 Antwort: "[Antworttext]"
-entsprechen. Beinhalte in deiner antwort sonst keinen text. Die Antworten sollen immer so kurz wie möglich gehalten werden
+entsprechen. Beinhalte in deiner antwort sonst keinen text. Die Antworten sollen immer so kurz wie möglich gehalten werden. Halte außerdem deine Antworten im JSON Format
 
 I.1.4 Learning & Softcomputing
 M006 Learning & Softcomputing
