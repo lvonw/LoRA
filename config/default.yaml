@@ -4,7 +4,7 @@
 Main:
   log level: debug
   
-  base model: Llama-3.2-1B-Instruct
+  base model: Llama-3.2-3B-Instruct
   Fine-Tuned Model:
     dataset:    numina-cot-100k
     method:     LoRA
