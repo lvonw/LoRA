@@ -42,10 +42,10 @@ def run_inference(inference_config,
             pad_token_id            = tokenizer.eos_token_id,
             eos_token_id            = tokenizer.eos_token_id)
 
-        output_sequences = output_sequences.to(
-            util.get_device(idle = True))
+        # output_sequences = output_sequences.to(
+        #     util.get_device(idle = True))
 
-        output_sequences = output_sequences[:, input_ids.shape[1]:]
+        # output_sequences = output_sequences[:, input_ids.shape[1]:]
 
         response = tokenizer.decode(
             output_sequences[0], 
