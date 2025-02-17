@@ -238,7 +238,7 @@ Du bist ein Generator für LLM Trainingsbeispiele im Frage Antwort Format. Du an
 Generiere zu dem folgenden Text 20 Frage Antwort paare zu dem Inhalt dieser Seite aus dem Kurrikulum eines Master Studiengangs in der Informatik. Die paare sollen exakt dem muster 
 Frage: "[Fragetext]"
 Antwort: "[Antworttext]"
-entsprechen. Beinhalte in deiner antwort sonst keinen text. Die Antworten sollen immer so kurz wie möglich gehalten werden.
+entsprechen. Beinhalte in deiner antwort sonst keinen text. Die Antworten sollen immer so kurz wie möglich gehalten werden. Halte außerdem deine Antworten im JSON Format.
 
 I.1.4 Learning & Softcomputing
 M006 Learning & Softcomputing
