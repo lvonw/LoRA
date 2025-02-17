@@ -32,7 +32,7 @@ def run_inference(inference_config,
 
         output_sequences = model.generate(
             input_ids,
-            max_new_tokens          = 1024, 
+            #max_new_tokens          = 1024, 
             attention_mask          = attention_mask,
             do_sample               = False, 
             temperature             = None if True else 0.6,
