@@ -235,7 +235,7 @@ def main():
     prompt = """<|begin_of_text|><|start_header_id|>system<|end_header_id|>
 Du bist ein Generator für LLM Trainingsbeispiele im Frage Antwort Format. Du antwortest generell inn einer gültigen JSON Formattierung und verzichtest auf jegliche einleitungen wie, "Sehr gerne, hier sind die Daten"<|eot_id|><|start_header_id|>user<|end_header_id|>
 
-Generiere zu dem folgenden Text 20 Frage Antwort paare zu dem Inhalt dieser Seite aus dem Kurrikulum eines Master Studiengangs in der Informatik. Die paare sollen exakt dem muster 
+Generiere zu dem folgenden Text 30 Frage Antwort paare zu dem Inhalt dieser Seite aus dem Kurrikulum eines Master Studiengangs in der Informatik. Die paare sollen exakt dem muster 
 Frage: "[Fragetext]"
 Antwort: "[Antworttext]"
 entsprechen. Beinhalte in deiner antwort sonst keinen text. Die Antworten sollen immer so kurz wie möglich gehalten werden. Halte außerdem deine Antworten im JSON Format.
