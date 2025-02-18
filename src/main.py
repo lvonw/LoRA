@@ -29,6 +29,10 @@ from trl            import SFTTrainer
 
 from tqdm           import tqdm
 
+from create_dataset import create_dataset
+
+
+
 # def setup_distributed():
 #     os.environ["RANK"] = "0"          
 #     os.environ["WORLD_SIZE"] = "1"     
@@ -99,6 +103,8 @@ def main():
     # Set up control flow
     do_inference    = args.do_inference[0] if args.do_inference else None
     do_fine_tune    = args.do_fine_tune
+    do_create_data  = args.do_generate_data
+    
     use_fine_tuned  = (do_inference     == "fine-tuned"
                        or do_inference  == "ft" 
                        or do_fine_tune)
@@ -226,56 +232,23 @@ def main():
         logging.info ("Successfully prepared fine-tuned adapter")
 
     # =========================================================================
+    # Create Dataset 
+    # =========================================================================
+    if do_create_data:
+        create_dataset(model,
+                       tokenizer,
+                       config)
+
+    # =========================================================================
     # Inference 
     # =========================================================================
     prompt = """<|begin_of_text|><|start_header_id|>system<|end_header_id|>
     You are a helpful assistant that is good at maths<|eot_id|><|start_header_id|>user<|end_header_id|>
     "In a fruit salad, there are raspberries, green grapes, and red grapes. There are three times the number of red grapes as green grapes, plus some additional red grapes. There are 5 less raspberries than green grapes. There are 102 pieces of fruit in the salad, and there are 67 red grapes in the salad. How many more red grapes are there than three times the number of green grapes?<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
-    
-    prompt = """<|begin_of_text|><|start_header_id|>system<|end_header_id|>
-Du bist ein Generator für LLM Trainingsbeispiele im Frage Antwort Format. Du antwortest generell inn einer gültigen JSON Formattierung und verzichtest auf jegliche einleitungen wie, "Sehr gerne, hier sind die Daten"<|eot_id|><|start_header_id|>user<|end_header_id|>
 
-Generiere zu dem folgenden Text ca. 30 unterschiedliche Frage-Antwort-Paare zu dem Inhalt dieser Seite aus dem Kurrikulum eines Master Studiengangs in der Informatik. Die paare sollen exakt dem muster 
-[{"Q": "[Fragetext]",
-"A": "[Antworttext]"}, ...]
-entsprechen. Beinhalte in deiner antwort sonst keinen text. Die Antworten sollen immer so kurz wie möglich gehalten werden. Halte außerdem deine Antworten im JSON Format.
-
-I.1.3.2 Übg. Funktionale Programmierung
-Lehrveranstaltung Übg. Funktionale Programmierung
-Dozent(en) Uwe Schmidt
-Hörtermin 2
-Häufigkeit jährlich
-Art 2
-Lehrform Übung/Praktikum/Planspiel
-Semesterwochenstunden 2
-ECTS 3.0
-Prüfungsform Abnahme
-Sprache deutsch
-Lehr- und Medienform(en) studentische Arbeit am Rechner
-Lernziele
-Ziel der Übung ist das Erlernen des praktischen Anwenden der Methoden und Konzepte aus
-der Vorlesung.
-Inhalt
-Praktische Übungen über die Themen
-• Rekursion,
-• T ypisierung,
-• Listen und T uple,
-• Funktionen als Daten,
-• Funktoren und Monaden,
-• Ein-und Ausgabe.
-Literatur
-• Uwe Schmidt:
-Funktionale Programmierung,
-Vorlesungsunterlagen im Web: http://www:fh-wedel:de/si/vorlesungen/fp/fp:h
-tml
-• Bird, Richard:
-Introduction to Functional Programming using Haskell,
-2nd Edition Prentice Hall, New Jersey , 1998, ISBN: 0-13-484346-0
-• Graham Hutton: Programming in Haskell, Cambridge University Press, 2007, ISBN:
-978-0-521-69269-4
-19<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
     # prompt = """<|begin_of_text|><|start_header_id|>system<|end_header_id|>
     # You are a helpful assistant that is good at maths<|eot_id|><|start_header_id|>user<|end_header_id|>A bounded sequence \\( x_{0}, x_{1}, x_{2}, \\ldots \\) such that for all natural numbers \\( i \\) and \\( j \\), where \\( i \\neq j \\), the following inequality holds:\n\\[ \\left|x_{i} - x_{j}\\right| |i - j|^{a} \\geq 1 \\]<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
+
 
     if do_inference:
         response = run_inference(config["Inference"],

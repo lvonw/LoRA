@@ -20,4 +20,12 @@ def prepare_arg_parser():
         choices=["base", "b", 
                  "fine_tuned", "ft"],
         nargs=1)
+    
+    parser.add_argument(
+        "-g",
+        "--generate-data",
+        dest="do_generate_data",
+        required=False, 
+        help= "",
+        action="store_true")
     return parser

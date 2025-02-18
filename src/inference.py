@@ -9,7 +9,8 @@ def run_inference(inference_config,
                   tokenizer,
                   prompt,
                   logger = logging,
-                  cache_dir = None):
+                  cache_dir = None,
+                  set_to_idle = True):
     
     response = None
 
