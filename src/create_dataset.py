@@ -1,6 +1,7 @@
 from pypdf import PdfReader
 import os
 import constants
+import json
 
 from tqdm           import tqdm
 
@@ -10,25 +11,24 @@ from inference import run_inference
 
 PROMPT = ("<|begin_of_text|><|start_header_id|>system<|end_header_id|>"
           "Du bist ein Generator für LLM Trainingsbeispiele im Frage Antwort Format. " 
-          "Du antwortest generell inn einer gültigen JSON Formattierung und verzichtest" 
-          "auf jegliche einleitungen wie, \"Sehr gerne, hier sind die Daten\" "
+          "Deine Antwort erfolgt ausschließlich in gültigem JSON-Format, ohne "
+          "jegliche Einleitungen oder Kommentare. "
           
           "<|eot_id|><|start_header_id|>user<|end_header_id|>"
-  
-          "Generiere zu dem folgenden Text ca. 30 unterschiedliche Frage-Antwort-Paare "
-          "zu dem Inhalt dieser Seite aus dem Kurrikulum eines Master Studiengangs "
-          "in der Informatik. Die paare sollen exakt dem muster "
-          "[{\"Q\": \"[Fragetext]\", "
-          "  \"A\": \"[Antworttext]\"}, ...]"
-          "entsprechen. Beinhalte in deiner antwort sonst keinen text. "
-          "Die Antworten sollen immer so kurz wie möglich gehalten werden. "
-          "Halte außerdem deine Antworten im JSON Format. "
-
+          "Generiere etwa 30 unterschiedliche Frage-Antwort-Paare zum folgenden Text. " 
+          "Der Inhalt stammt aus dem Curriculum eines Masterstudiengangs in Informatik bei der FH-Wedel. " 
+          
+          "Deine Antwort muss exakt diesem JSON-Muster entsprechen: \n"
+          "```json"
+          "[\n"
+          " {\"Q\": \"[Fragetext]\",  \"A\": \"[Antworttext]\"}, \n"
+          " ... \n"
+          "] \n"
           "Ein Beispiel für eine deiner Antworten wäre: "
           "[{\"Q\": \"[Wie ist die Modulnummer des Kurses Algorithmics]\", "
           "  \"A\": \"[Die Modulnummer des Kurses Algorithmics ist M003]\"}]"
           
-         "Der Seiteninhalt ist: "
+          "Der Seiteninhalt ist: "
         )
 
 
@@ -39,6 +39,10 @@ source_path = os.path.join(constants.DATASETS_PATH_MASTER,
                            "Custom",
                            "SAP",
                            "source.pdf")
+
+save_folder = os.path.join(constants.DATASETS_PATH_MASTER,
+                           "Custom",
+                           "SAP")
 
 def parse_pdf(path):
     reader = PdfReader(path)
@@ -68,7 +72,7 @@ def generate_question_pairs(page_text,
                             config):
     
     prompt = PROMPT + "\n" + page_text + PROMPT_END
-    print (prompt)
+    # print (prompt)
 
     response = run_inference(config,
                              model,
@@ -91,6 +95,17 @@ def create_dataset(model,
                                 tokenizer,
                                 config["Inference"]))
 
+    os.makedirs(save_folder, exist_ok=True)
+    save_path = os.path.join(save_folder, 
+                             "data.json")
+    with open(save_path, "w") as f:
+        json.dump(responses, f, indent=4)
+
+    save_path = os.path.join(save_folder, 
+                             "raw_data.txt")
+    with open(save_path, "w", encoding="utf-8") as f:
+        for response in responses:
+            f.write(response + "\n") 
 
 def main():
     parsed_pdf = parse_pdf(source_path)
