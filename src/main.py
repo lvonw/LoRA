@@ -29,7 +29,7 @@ from trl            import SFTTrainer
 
 from tqdm           import tqdm
 
-from create_dataset import create_dataset
+from create_dataset import create_dataset, compile_dataset
 
 
 
@@ -80,7 +80,7 @@ def tokenize_function(entry, tokenizer):
         tokenize=False)     
     tokenized_text = tokenizer(
         text            = formatted_text,
-        max_length      = 1024,
+        max_length      = 512,#1024,
         padding         = "max_length",
         truncation      = True,
         return_tensors  = "pt")
@@ -243,8 +243,8 @@ def main():
     # Inference 
     # =========================================================================
     prompt = """<|begin_of_text|><|start_header_id|>system<|end_header_id|>
-    You are a helpful assistant that is good at maths<|eot_id|><|start_header_id|>user<|end_header_id|>
-    "In a fruit salad, there are raspberries, green grapes, and red grapes. There are three times the number of red grapes as green grapes, plus some additional red grapes. There are 5 less raspberries than green grapes. There are 102 pieces of fruit in the salad, and there are 67 red grapes in the salad. How many more red grapes are there than three times the number of green grapes?<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
+    Du bist ein KI Assistent der FH Wedel<|eot_id|><|start_header_id|>user<|end_header_id|>
+    Wer ist der Dozent des Workshop Cryptography? <|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
 
     # prompt = """<|begin_of_text|><|start_header_id|>system<|end_header_id|>
     # You are a helpful assistant that is good at maths<|eot_id|><|start_header_id|>user<|end_header_id|>A bounded sequence \\( x_{0}, x_{1}, x_{2}, \\ldots \\) such that for all natural numbers \\( i \\) and \\( j \\), where \\( i \\neq j \\), the following inequality holds:\n\\[ \\left|x_{i} - x_{j}\\right| |i - j|^{a} \\geq 1 \\]<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
@@ -263,17 +263,24 @@ def main():
     # =========================================================================
     if do_fine_tune:
         # Load and Format Dataset =============================================
-        train_data = load_dataset(
-            dataset_id, 
-            dataset_name, 
-            cache_dir=dataset_path,
-            split="train")
+        # train_data = load_dataset(
+        #     dataset_id, 
+        #     dataset_name, 
+        #     cache_dir=dataset_path,
+        #     split="train")
         
-        val_data = load_dataset(
-            dataset_id, 
-            dataset_name, 
-            cache_dir=dataset_path,
-            split="test")
+        # val_data = load_dataset(
+        #     dataset_id, 
+        #     dataset_name, 
+        #     cache_dir=dataset_path,
+        #     split="test")
+        
+        # print (train_data["messages"][0])
+        # print (type (train_data))
+        # print (train_data)
+
+        train_data = compile_dataset()
+        val_data = compile_dataset()
         
         tokenizer.pad_token = tokenizer.eos_token
 
@@ -283,6 +290,7 @@ def main():
             desc        = "Formatting Training Data",
             fn_kwargs   = {
                 "tokenizer" : tokenizer})
+        
         
         val_data = val_data.map(
             tokenize_function, 
@@ -342,8 +350,8 @@ def main():
                 training_args = TrainingArguments(
                     output_dir                  = fine_tuned_dir,
                     num_train_epochs            = 1,
-                    per_device_train_batch_size = 4,
-                    per_device_eval_batch_size  = 4,
+                    per_device_train_batch_size = 1,
+                    per_device_eval_batch_size  = 1,
                     eval_strategy               = "epoch",
                     logging_dir                 = "./logs",
                     logging_steps               = 500,

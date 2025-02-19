@@ -8,6 +8,29 @@ from tqdm           import tqdm
 
 from inference import run_inference
 
+class page():
+    def __init__(self):
+        self.raw_text           = None
+
+        self.class_name         = None
+        self.teacher            = None
+        self.appointment_count  = None
+        self.frequency          = None
+        self.type               = None
+        self.class_type         = None
+        self.hour_amount        = None
+        self.ects               = None
+        self.examn_type         = None
+        self.language           = None
+        self.media_type         = None
+
+        self.goals              = None
+        self.content            = None
+        self.literature         = None
+
+        
+        return 
+
 
 PROMPT = ("<|begin_of_text|><|start_header_id|>system<|end_header_id|>"
           "Du bist ein Generator für LLM Trainingsbeispiele im Frage Antwort Format. " 
@@ -18,15 +41,13 @@ PROMPT = ("<|begin_of_text|><|start_header_id|>system<|end_header_id|>"
           "Generiere etwa 30 unterschiedliche Frage-Antwort-Paare zum folgenden Text. " 
           "Der Inhalt stammt aus dem Curriculum eines Masterstudiengangs in Informatik bei der FH-Wedel. " 
           
-          "Deine Antwort muss exakt diesem JSON-Muster entsprechen: \n"
-          "```json"
-          "[\n"
-          " {\"Q\": \"[Fragetext]\",  \"A\": \"[Antworttext]\"}, \n"
-          " ... \n"
-          "] \n"
+          "Deine Antwort muss exakt diesem Muster entsprechen: \n"
+          " {\"Q\": \"[Fragetext1]\",  \"A\": \"[Antworttext1]\"}, \n"
+          " {\"Q\": \"[Fragetext2]\",  \"A\": \"[Antworttext2]\"}, \n"
+
           "Ein Beispiel für eine deiner Antworten wäre: "
-          "[{\"Q\": \"[Wie ist die Modulnummer des Kurses Algorithmics]\", "
-          "  \"A\": \"[Die Modulnummer des Kurses Algorithmics ist M003]\"}]"
+          "{\"Q\": \"[Wie ist die Modulnummer des Kurses Algorithmics]\", "
+          "  \"A\": \"[Die Modulnummer des Kurses Algorithmics ist M003]\"},"
           
           "Der Seiteninhalt ist: "
         )
@@ -35,14 +56,13 @@ PROMPT = ("<|begin_of_text|><|start_header_id|>system<|end_header_id|>"
 
 PROMPT_END =  "<|eot_id|><|start_header_id|>assistant<|end_header_id|>"
 
-source_path = os.path.join(constants.DATASETS_PATH_MASTER,
-                           "Custom",
-                           "SAP",
-                           "source.pdf")
 
 save_folder = os.path.join(constants.DATASETS_PATH_MASTER,
                            "Custom",
                            "SAP")
+
+source_path = os.path.join(save_folder,
+                           "source.pdf")
 
 def parse_pdf(path):
     reader = PdfReader(path)
@@ -64,6 +84,9 @@ def parse_pdf(path):
         elif len(page_text):
             parsed_pdf.append(page_text)
 
+    print(parsed_pdf[15])
+
+    exit()
     return parsed_pdf
 
 def generate_question_pairs(page_text, 
@@ -106,6 +129,52 @@ def create_dataset(model,
     with open(save_path, "w", encoding="utf-8") as f:
         for response in responses:
             f.write(response + "\n") 
+
+
+system_prompt = ("Du bist ein hilfreicher KI-Assistent, der Auskunft über " 
+                 "das Curriculum des Master-Studiengangs Informatik an der "
+                 "FH-Wedel geben kann")
+
+
+from datasets import Dataset
+
+def helper (entry):
+
+    result_s = {}
+    result_s["role"]    = "system"
+    result_s["content"] = system_prompt
+
+    result_q = {}
+    result_q["role"]    = "user"
+    result_q["content"] = entry["Q"]
+
+    result_a = {}
+    result_a["role"]    = "assistant"
+    result_a["content"] = entry["A"]
+
+    return [result_s, result_q, result_a]
+
+
+
+def compile_dataset():
+    save_path = os.path.join(save_folder, 
+                             "data.json")
+
+    with open(save_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    e = {"messages": [helper(entry) for entry in data]}
+    
+
+    # print (e)
+          
+    compiled_dataset = Dataset.from_dict(e)
+
+    # print (compiled_dataset)
+
+    return compiled_dataset
+
+
 
 def main():
     parsed_pdf = parse_pdf(source_path)
