@@ -159,6 +159,9 @@ def main():
                 logging.error("Checkpoint directory could not be found")
                 return -1
 
+            print (checkpoint_dir)
+
+
             model, tokenizer = FastLanguageModel.from_pretrained(
                 #base_cache_dir,
                 model_name = checkpoint_dir,
