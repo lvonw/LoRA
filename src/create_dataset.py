@@ -84,9 +84,9 @@ def parse_pdf(path):
         elif len(page_text):
             parsed_pdf.append(page_text)
 
-    print(parsed_pdf[15])
+    # print(parsed_pdf[15])
 
-    exit()
+    # exit()
     return parsed_pdf
 
 def generate_question_pairs(page_text, 
