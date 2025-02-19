@@ -247,7 +247,7 @@ def main():
     # =========================================================================
     prompt = """<|begin_of_text|><|start_header_id|>system<|end_header_id|>
     Du bist ein KI Assistent der FH Wedel<|eot_id|><|start_header_id|>user<|end_header_id|>
-    Welche Modulnummer hat Visualisierung <|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
+    Welche Modulnummer hat Distributed Systems <|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
 
     # prompt = """<|begin_of_text|><|start_header_id|>system<|end_header_id|>
     # You are a helpful assistant that is good at maths<|eot_id|><|start_header_id|>user<|end_header_id|>A bounded sequence \\( x_{0}, x_{1}, x_{2}, \\ldots \\) such that for all natural numbers \\( i \\) and \\( j \\), where \\( i \\neq j \\), the following inequality holds:\n\\[ \\left|x_{i} - x_{j}\\right| |i - j|^{a} \\geq 1 \\]<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
