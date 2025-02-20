@@ -141,14 +141,14 @@ SYS_PROMPT = ("<|begin_of_text|><|start_header_id|>system<|end_header_id|>"
 PROMPT_START ="<|eot_id|><|start_header_id|>user<|end_header_id|>"
 
 EXAMPLE_PROMPT = ("Deine Antwort muss exakt diesem Muster entsprechen: \n"
-                  " {\"Q\": \"[Fragetext1]\", \"A\": \"[Antworttext1]\"}, \n"
-                  " {\"Q\": \"[Fragetext2]\", \"A\": \"[Antworttext2]\"}, \n"
+                  " {\"Q\": \"Fragetext1\", \"A\": \"Antworttext1\"}, \n"
+                  " {\"Q\": \"Fragetext2\", \"A\": \"Antworttext2\"}, \n"
 
                   "Beispielsweise sei dies ein gegebener Ausschnitt aus dem Kapitel Algorithmics: \n "
                   "Kürzel: M003 \n"
                   "Ein Beispiel für ein gültiges Frage-Antwort-Paar ist: \n"
-                  "{\"Q\": \"[Wie ist die Modulnummer des Kurses Algorithmics?]\", "
-                  " \"A\": \"[Die Modulnummer des Kurses Algorithmics ist M003.]\"},\n"
+                  "{\"Q\": \"Wie ist die Modulnummer des Kurses Algorithmics?\", "
+                  " \"A\": \"Die Modulnummer des Kurses Algorithmics ist M003.\"},\n"
         )
 PROMPT_END =  "<|eot_id|><|start_header_id|>assistant<|end_header_id|>"
 
@@ -156,7 +156,7 @@ def build_user_prompt(page, paragraph, amount):
     user_prompt = PROMPT_START
 
     user_prompt += f"Der folgende Inhalt ist ein Ausschnitt aus der Beschreibung des Kurses {page.name}"    
-    user_prompt += f" aus dem Modulhandbuch der FH-Wedel. Generiere zu ihm {amount} "
+    user_prompt += f" aus dem Modulhandbuch der FH-Wedel. Generiere zu diesem Ausschnitt {amount} "
     user_prompt += "Frage-Antwort Paare, welche ausschließlich aus dem Inhalt des "
     user_prompt += "gegebenen Ausschnitts entnommen werden. \n"
     user_prompt += f"Erwähne in allen deinen Fragen immer auch den Namen des aktuellen Kurses: {page.name}\n"
@@ -189,6 +189,7 @@ def generate_question_pairs(page,
         print ("------")
         
         question_answer_pairs.append(response)
+        # return question_answer_pairs
 
     for table_content in page.content_paragraphs:
         prompt = build_user_prompt(page, table_content, 10)
@@ -212,8 +213,9 @@ def create_dataset(model,
                    config):
     parsed_pdf = parse_pdf(source_path)
 
+    # print (parsed_pdf[5])
     responses = []
-    for page in tqdm(parsed_pdf[7:]):
+    for page in tqdm(parsed_pdf[6:]):
         responses.append(generate_question_pairs(page,
                          model,
                          tokenizer,
@@ -231,7 +233,8 @@ def create_dataset(model,
                              "raw_data.txt")
     with open(save_path, "w", encoding="utf-8") as f:
         for response in responses:
-            f.write(response + "\n") 
+            for r in response: 
+                f.write(r + "\n") 
 
 
 system_prompt = ("Du bist ein hilfreicher KI-Assistent, der Auskunft über " 
