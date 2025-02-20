@@ -22,6 +22,16 @@ def prepare_arg_parser():
         nargs=1)
     
     parser.add_argument(
+        "-p",
+        "--prompt",
+        dest="prompt",
+        required=False, 
+        help= "",
+        type=str,
+        nargs=1)
+
+
+    parser.add_argument(
         "-g",
         "--generate-data",
         dest="do_generate_data",
