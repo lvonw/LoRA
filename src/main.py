@@ -210,8 +210,8 @@ def main():
             match fine_tuning_framework:
                 case "PEFT":
                     lora_config = LoraConfig(
-                        r               = 32, #64, 
-                        lora_alpha      = 64, #128, 
+                        r               = 16, #64, 
+                        lora_alpha      = 32, #128, 
                         lora_dropout    = 0,  
                         bias            = "none",  
                         task_type       = "CAUSAL_LM",  
