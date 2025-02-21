@@ -80,7 +80,7 @@ def tokenize_function(entry, tokenizer):
         tokenize=False)     
     tokenized_text = tokenizer(
         text            = formatted_text,
-        max_length      = 128,#1024,
+        max_length      = 256,#1024,
         padding         = "max_length",
         truncation      = True,
         return_tensors  = "pt")
@@ -210,8 +210,8 @@ def main():
             match fine_tuning_framework:
                 case "PEFT":
                     lora_config = LoraConfig(
-                        r               = 64, 
-                        lora_alpha      = 128, 
+                        r               = 32, #64, 
+                        lora_alpha      = 64, #128, 
                         lora_dropout    = 0,  
                         bias            = "none",  
                         task_type       = "CAUSAL_LM",  
