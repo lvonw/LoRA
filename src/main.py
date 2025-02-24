@@ -110,7 +110,7 @@ def main():
                        or do_fine_tune)
     load_existing   = use_fine_tuned and not do_fine_tune
 
-    user_prompt     = args.prompt
+    user_prompt     = args.prompt[0]
     
     # Set up configuration
     config = Configuration(constants.CONFIG_PATH_MASTER, "default")
@@ -265,7 +265,6 @@ def main():
 
 
     if do_inference:
-        print (user_prompt)
         prompt = [
             {"role": "system", "content": "Du bist ein KI-Assistent der FH Wedel."},
             {"role": "user", "content": user_prompt}
