@@ -265,6 +265,7 @@ def main():
 
 
     if do_inference:
+        print (user_prompt)
         prompt = [
             {"role": "system", "content": "Du bist ein KI-Assistent der FH Wedel."},
             {"role": "user", "content": user_prompt}
