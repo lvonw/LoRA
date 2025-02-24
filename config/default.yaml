@@ -4,7 +4,7 @@
 Main:
   log level: debug
   
-  base model: Llama-3.1-8B-Instruct
+  base model: Ministral-8B-Instruct-2410
   Fine-Tuned Model:
     dataset:    apigen-80k
     method:     LoRA
@@ -18,7 +18,7 @@ Devices:
 
 Inference:
   show input:           no
-  skip special tokens:  yes 
+  skip special tokens:  no 
 
 Fine-Tuning:
   batch-size: 4
@@ -49,6 +49,8 @@ Models:
     - Llama-3.2-3B
     - Llama-3.2-3B-Instruct
     - Llama-3.1-8B-Instruct
+  mistralai:
+    - Ministral-8B-Instruct-2410
 
 Datasets:
   HuggingFaceTB:

@@ -258,11 +258,25 @@ def main():
     Du bist ein KI Assistent der FH Wedel<|eot_id|><|start_header_id|>user<|end_header_id|>
     {user_prompt} <|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
 
+
+
     # prompt = """<|begin_of_text|><|start_header_id|>system<|end_header_id|>
     # You are a helpful assistant that is good at maths<|eot_id|><|start_header_id|>user<|end_header_id|>A bounded sequence \\( x_{0}, x_{1}, x_{2}, \\ldots \\) such that for all natural numbers \\( i \\) and \\( j \\), where \\( i \\neq j \\), the following inequality holds:\n\\[ \\left|x_{i} - x_{j}\\right| |i - j|^{a} \\geq 1 \\]<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
 
 
     if do_inference:
+        prompt = [
+            {"role": "system", "content": "Du bist ein KI-Assistent der FH Wedel."},
+            {"role": "user", "content": user_prompt}
+        ]
+
+        # print (tokenizer.chat_template)
+        prompt = tokenizer.apply_chat_template(
+            prompt, 
+            tokenize=False)
+        
+        # print (prompt)
+
         response = run_inference(config["Inference"],
                                  model,
                                  tokenizer,
@@ -295,6 +309,8 @@ def main():
         val_data = compile_dataset()
         
         tokenizer.pad_token = tokenizer.eos_token
+
+
 
         train_data = train_data.map(
             tokenize_function, 
