@@ -310,8 +310,6 @@ def main():
         
         tokenizer.pad_token = tokenizer.eos_token
 
-
-
         train_data = train_data.map(
             tokenize_function, 
             batched     = True,
@@ -397,11 +395,6 @@ def main():
                         data_collator   = data_collator,
                         args            = training_args,
                     )
-                    # from unsloth.chat_templates import train_on_responses_only
-                    # trainer = train_on_responses_only(
-                    # trainer,
-                    # instruction_part = "<|start_header_id|>user<|end_header_id|>\n\n",
-                    # response_part = "<|start_header_id|>assistant<|end_header_id|>\n\n")
                 else:
                     trainer = Trainer(
                         model           = model, 
