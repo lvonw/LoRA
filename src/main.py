@@ -110,7 +110,9 @@ def main():
                        or do_fine_tune)
     load_existing   = use_fine_tuned and not do_fine_tune
 
-    user_prompt     = args.prompt[0]
+    user_prompt = ""
+    if do_inference:
+        user_prompt     = args.prompt[0]
     
     # Set up configuration
     config = Configuration(constants.CONFIG_PATH_MASTER, "default")
