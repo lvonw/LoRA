@@ -10,7 +10,7 @@ Main:
     batch-size: 2
     epochs:     1
     
-    framework: unsloth
+    framework: PEFT
 
 Devices:
   idle_device: cpu
