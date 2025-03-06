@@ -291,24 +291,24 @@ def main():
     # =========================================================================
     if do_fine_tune:
         # Load and Format Dataset =============================================
-        # train_data = load_dataset(
-        #     dataset_id, 
-        #     dataset_name, 
-        #     cache_dir=dataset_path,
-        #     split="train")
+        train_data = load_dataset(
+            dataset_id, 
+            dataset_name, 
+            cache_dir=dataset_path,
+            split="train")
         
-        # val_data = load_dataset(
-        #     dataset_id, 
-        #     dataset_name, 
-        #     cache_dir=dataset_path,
-        #     split="test")
+        val_data = load_dataset(
+            dataset_id, 
+            dataset_name, 
+            cache_dir=dataset_path,
+            split="test")
         
         # print (train_data["messages"][0])
         # print (type (train_data))
         # print (train_data)
 
-        train_data = compile_dataset()
-        val_data = compile_dataset()
+        # train_data = compile_dataset()
+        # val_data = compile_dataset()
         
         tokenizer.pad_token = tokenizer.eos_token
 
