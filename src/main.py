@@ -127,10 +127,11 @@ def main():
     # =========================================================================
     # Model Params ------------------------------------------------------------
     base_model_name         = main_config["base model"]
+    if do_inference:
+        base_model_name     = args.base[0]
     base_model_id           = util.build_model_id(config["Models"], 
                                         base_model_name)
-    if do_inference:
-        base_model_id     = args.base[0]
+    
 
     if base_model_id is None:
         logging.error("Model is not supported.")
