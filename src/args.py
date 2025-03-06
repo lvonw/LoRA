@@ -29,6 +29,15 @@ def prepare_arg_parser():
         help= "",
         type=str,
         nargs=1)
+    
+    parser.add_argument(
+        "-m",
+        "--model",
+        dest="base",
+        required=False, 
+        help= "",
+        type=str,
+        nargs=1)
 
 
     parser.add_argument(

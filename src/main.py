@@ -113,6 +113,7 @@ def main():
     user_prompt = ""
     if do_inference:
         user_prompt     = args.prompt[0]
+        
     
     # Set up configuration
     config = Configuration(constants.CONFIG_PATH_MASTER, "default")
@@ -128,6 +129,9 @@ def main():
     base_model_name         = main_config["base model"]
     base_model_id           = util.build_model_id(config["Models"], 
                                         base_model_name)
+    if do_inference:
+        base_model_id     = args.base[0]
+
     if base_model_id is None:
         logging.error("Model is not supported.")
         return -1
