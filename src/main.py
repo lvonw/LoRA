@@ -80,7 +80,7 @@ def tokenize_function(entry, tokenizer):
         tokenize=False)     
     tokenized_text = tokenizer(
         text            = formatted_text,
-        max_length      = 256,#1024,
+        max_length      = 1024,
         padding         = "max_length",
         truncation      = True,
         return_tensors  = "pt")
@@ -212,8 +212,8 @@ def main():
             match fine_tuning_framework:
                 case "PEFT":
                     lora_config = LoraConfig(
-                        r               = 16, #64, 
-                        lora_alpha      = 32, #128, 
+                        r               = 64, 
+                        lora_alpha      = 128, 
                         lora_dropout    = 0,  
                         bias            = "none",  
                         task_type       = "CAUSAL_LM",  
@@ -378,7 +378,7 @@ def main():
                 training_args = TrainingArguments(
                     output_dir                  = fine_tuned_dir,
                     num_train_epochs            = 1,
-                    per_device_train_batch_size = 1,
+                    per_device_train_batch_size = 4,
                     per_device_eval_batch_size  = 1,
                     eval_strategy               = "epoch",
                     logging_dir                 = "./logs",
